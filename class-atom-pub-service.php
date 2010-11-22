@@ -15,8 +15,8 @@ class AtomPubService {
         global $SERVICE_CONTENT_TYPE, $ATOM_CONTENT_TYPE;
         global $post_type_post, $post_type_page;
 
-        $posts_url = esc_url($this->url_generator->collection(1, $post_type_post));
-        $pages_url = esc_url($this->url_generator->collection(1, $post_type_page));
+        $posts_url = esc_url($this->url_generator->list_url(1, $post_type_post));
+        $pages_url = esc_url($this->url_generator->list_url(1, $post_type_page));
         $xml = <<<EOD
 <?xml version="1.0" encoding="utf-8"?>
 <service xmlns="$ATOMPUB_NS" xmlns:atom="$ATOM_NS">

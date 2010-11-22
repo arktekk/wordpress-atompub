@@ -7,60 +7,60 @@ class AtomPubServer {
 
     function AtomPubServer() {
         $this->app_base = site_url();
+        $this->blog_id = get_option('blogname');
     }
 
     function handle_request($query) {
-        $method = $_SERVER['REQUEST_METHOD'];
-
-        $request = new AtomPubRequest($query);
-
-        $atompub = $query['atompub'];
-
         foreach ($query as $key => $value) {
             header("X-Debug: " . $key . "=" . $value);
         }
 
-        if ($atompub == "service") {
-            if ($method == "GET") {
-                $this->get_service($request);
-            }
-            else {
-                $this->not_allowed("GET");
-            }
-        }
-        else if ($atompub == "posts") {
-            if ($method == "GET") {
-                $this->get_posts($request);
-            }
-            else {
-                $this->not_allowed("GET");
-            }
-        } else if ($atompub == "pages") {
-            if ($method == "GET") {
-                $this->get_posts($request);
-            }
-            else {
-                $this->not_allowed("GET");
-            }
-        }
-        else {
-            $this->not_found();
+        $method = $_SERVER['REQUEST_METHOD'];
+
+        $request = new AtomPubRequest($query);
+
+        switch($request->request_type()) {
+            case AtomPubRequest::$request_type_service:
+                if ($method == "GET") {
+                    $this->get_service($request);
+                }
+                else {
+                    $this->not_allowed("GET");
+                }
+                break;
+            case AtomPubRequest::$request_type_list:
+                if ($method == "GET") {
+                    $this->get_posts($request);
+                }
+                else {
+                    $this->not_allowed("GET");
+                }
+                break;
+            case AtomPubRequest::$request_type_post:
+                if ($method == "GET") {
+                    $this->get_post($request);
+                }
+                else {
+                    $this->not_allowed("GET");
+                }
+            default:
+                $this->not_found();
         }
     }
 
     function get_service() {
-        $service = new AtomPubService(new UrlGenerator($this->app_base));
+        $service = new AtomPubService(new UrlGenerator($this->app_base, $this->blog_id));
         $service->to_response(get_bloginfo('name'))->send();
     }
 
     function get_posts(AtomPubRequest $request) {
         $current_page = $request->page();
-        if($current_page == NULL) {
+        if ($current_page == NULL) {
             $this->bad_request("Invalid value for '" . AtomPubRequest::$param_page . "'.");
         }
 
         $post_type = $request->post_type();
-        if(!isset($post_type)) {
+        if (!isset($post_type)) {
             $this->bad_request("Invalid value for '" . AtomPubRequest::$param_post_type . "'.");
         }
 
@@ -70,7 +70,7 @@ class AtomPubServer {
             'offset' => self::page_size * ($current_page - 1));
 
         $parent = $request->parent();
-        if(isset($parent)) {
+        if (isset($parent)) {
             $args["post_parent"] = $parent;
         }
 
@@ -78,9 +78,35 @@ class AtomPubServer {
 
         $num_pages = $query->max_num_pages;
 
-        $feed = new AtomPubFeed(new UrlGenerator($this->app_base), $post_type, $current_page, $num_pages, self::page_size);
+        $feed = AtomPubFeed::createListFeed(new UrlGenerator($this->app_base, $this->blog_id), $post_type, $current_page, $num_pages, self::page_size);
 
         while ($query->have_posts()) {
+            $post = $query->next_post();
+            $author = get_userdata($post->post_author);
+            $categories = get_the_category($post->ID);
+            $feed->add_post($post, $author, $categories, $request->include_content());
+        }
+        $feed->to_response($query, $categories)->send();
+    }
+
+    function get_post(AtomPubRequest $request) {
+        $post_type = $request->post_type();
+        if (!isset($post_type)) {
+            $this->bad_request("Invalid value for '" . AtomPubRequest::$param_post_type . "'.");
+        }
+
+        $id = $request->id();
+        if (!isset($id)) {
+            $this->bad_request("Invalid value for '" . AtomPubRequest::$param_id . "'.");
+        }
+
+        $args = array(
+            'id' => $id,
+            'post_type' => $post_type->wordpress_id());
+
+        $query = new WP_Query($args);
+        $feed = AtomPubFeed::createEntryFeed(new UrlGenerator($this->app_base, $this->blog_id), $post_type, $id);
+        if ($query->have_posts()) {
             $post = $query->next_post();
             $author = get_userdata($post->post_author);
             $categories = get_the_category($post->ID);

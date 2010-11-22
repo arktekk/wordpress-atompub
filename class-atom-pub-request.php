@@ -31,7 +31,7 @@ class PostType {
     static function from_query($s) {
         global $post_type_post, $post_type_page;
 
-        switch($s) {
+        switch ($s) {
             case $post_type_post->id: return $post_type_post;
             case $post_type_page->id: return $post_type_page;
             default: return NULL;
@@ -41,8 +41,8 @@ class PostType {
     static function from_wordpress($s) {
         global $post_type_post, $post_type_page;
 
-        switch($s) {
-            case $post_type_post->wordpress_id(): return $post_type_post;
+        switch ($s) {
+            case $post_type_post->wordpress_id: return $post_type_post;
             case $post_type_page->wordpress_id: return $post_type_page;
             default: return NULL;
         }
@@ -54,7 +54,12 @@ class AtomPubRequest {
     public static $param_page = "pg";
     public static $param_parent = "parent";
     public static $param_post_type = "pt";
-    public static $query_parameter_keys = array("atompub", "include_content", "pg", "parent", "pt");
+    public static $param_id = "id";
+    public static $param_request_type = "atompub";
+    public static $request_type_service = "service";
+    public static $request_type_list = "list";
+    public static $request_type_post = "post";
+    public static $query_parameter_keys = array("atompub", "include_content", "pg", "parent", "pt", "id");
 
     private $query_parameters = array();
 
@@ -72,6 +77,14 @@ class AtomPubRequest {
 
     public function include_content() {
         return $this->is_query_parameter_empty("include_content");
+    }
+
+    public function id() {
+        return $this->get_query_parameter_as_positive(self::$param_id);
+    }
+
+    public function request_type() {
+        return $this->get_query_parameter_nonempty_string(self::$param_request_type);
     }
 
     /**
@@ -128,6 +141,11 @@ class AtomPubRequest {
     private function is_query_parameter_empty($name) {
         $val = $this->query_parameters[$name];
         return !isset($val) || $val == "";
+    }
+
+    private function get_query_parameter_nonempty_string($name) {
+        $val = $this->query_parameters[$name];
+        return (isset($val) && strlen($val) > 0) ? $val : NULL;
     }
 }
 
