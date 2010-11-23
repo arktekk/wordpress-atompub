@@ -58,6 +58,7 @@ class AtomPubRequest {
     public static $param_request_type = "atompub";
     public static $request_type_service = "service";
     public static $request_type_list = "list";
+    public static $request_type_children = "children";
     public static $request_type_post = "post";
     public static $query_parameter_keys = array("atompub", "include_content", "pg", "parent", "pt", "id");
 

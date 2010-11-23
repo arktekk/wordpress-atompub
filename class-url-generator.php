@@ -40,12 +40,12 @@ class UrlGenerator {
         return "urn:$this->blog_id:post:$post_type:$post_id";
     }
 
-    public function child_posts($post_id, PostType $post_type, ContentType $content_type) {
-        $page = AtomPubRequest::$param_page;
-        $parent = AtomPubRequest::$param_parent;
-        $post_type_key = AtomPubRequest::$param_post_type;
-
-        return $this->base_url . "/?atompub=posts&{$page}=1&{$post_type_key}={$post_type}&${parent}={$post_id}&contentType={$content_type}";
+    public function child_posts($parent_id, PostType $post_type) {
+        return $this->base_url . "/?".
+                AtomPubRequest::$param_request_type . "=" . AtomPubRequest::$request_type_children . "&" .
+                AtomPubRequest::$param_page . "=1&" .
+                AtomPubRequest::$param_post_type . "={$post_type}&" .
+                AtomPubRequest::$param_parent . "={$parent_id}";
     }
 
     public function child_posts_iri(PostType $post_type, $post_id) {

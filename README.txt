@@ -1,3 +1,7 @@
+= TODOs =
+
+o Use the XML writer API to instead of creating gigantic strings.
+
 = URL Design =
 
 Types:
