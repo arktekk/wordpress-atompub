@@ -11,10 +11,6 @@ class AtomPubServer {
     }
 
     function handle_request($query) {
-        foreach ($query as $key => $value) {
-            header("X-Debug: " . $key . "=" . $value);
-        }
-
         $method = $_SERVER['REQUEST_METHOD'];
 
         $request = new AtomPubRequest($query);
@@ -51,6 +47,7 @@ class AtomPubServer {
                 else {
                     $this->not_allowed("GET");
                 }
+                break;
             default:
                 $this->not_found();
         }
@@ -120,7 +117,7 @@ class AtomPubServer {
 
         $num_pages = $query->max_num_pages;
 
-        $feed = AtomPubFeed::createListFeed(new UrlGenerator($this->app_base, $this->blog_id), $post_type, $current_page, $num_pages, self::page_size);
+        $feed = AtomPubFeed::createChildrenFeed(new UrlGenerator($this->app_base, $this->blog_id), $post_type, $parent_id, $current_page, $num_pages, self::page_size);
 
         while ($query->have_posts()) {
             $post = $query->next_post();
@@ -143,7 +140,7 @@ class AtomPubServer {
         }
 
         $args = array(
-            'id' => $id,
+            'post__in' => array($id),
             'post_type' => $post_type->wordpress_id());
 
         $query = new WP_Query($args);

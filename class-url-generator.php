@@ -8,48 +8,36 @@ class UrlGenerator {
     function list_url($page_index, PostType $post_type) {
         return $this->base_url . "/?" .
                 AtomPubRequest::$param_request_type . "=" . AtomPubRequest::$request_type_list . "&" .
-                AtomPubRequest::$param_post_type . "=" . $post_type . "&" .
-                AtomPubRequest::$param_page . "=" . $page_index;
+                AtomPubRequest::$param_post_type . "=$post_type&" .
+                AtomPubRequest::$param_page . "=$page_index";
     }
 
     function list_iri(PostType $post_type) {
-        return "urn:$this->blog_id:list:$post_type";
+        return "urn:$this->blog_id:" . AtomPubRequest::$request_type_list . ":$post_type";
     }
 
-    function post_url($post_id, PostType $post_type, ContentType $content_type) {
-        global $ContentType_ATOM, $ContentType_HTML;
-
-        $url = $this->base_url . "/?" .
-                AtomPubRequest::$param_request_type . "=" . AtomPubRequest::$request_type_post .
-                "&" . AtomPubRequest::$param_post_type . "=" . $post_type .
-                "&id=$post_id";
-
-        switch ($content_type) {
-            case $ContentType_HTML:
-                $url .= "&contentType=html";
-            case $ContentType_ATOM:
-                break;
-            default:
-                wp_die("Unknown content type: " . $content_type);
-        }
-
-        return $url;
-    }
-
-    function post_iri(PostType $post_type, $post_id) {
-        return "urn:$this->blog_id:post:$post_type:$post_id";
-    }
-
-    public function child_posts($parent_id, PostType $post_type) {
+    public function child_posts_of($parent_id, $page_index, PostType $post_type) {
         return $this->base_url . "/?".
                 AtomPubRequest::$param_request_type . "=" . AtomPubRequest::$request_type_children . "&" .
-                AtomPubRequest::$param_page . "=1&" .
+                AtomPubRequest::$param_page . "={$page_index}&" .
                 AtomPubRequest::$param_post_type . "={$post_type}&" .
                 AtomPubRequest::$param_parent . "={$parent_id}";
     }
 
     public function child_posts_iri(PostType $post_type, $post_id) {
-        return "urn:$this->blog_id:list:$post_type:$post_id";
+        return "urn:$this->blog_id:" . AtomPubRequest::$request_type_children  . ":$post_type:$post_id";
+    }
+
+    function post_url($post_id, PostType $post_type, ContentType $content_type) {
+        return $this->base_url . "/?" .
+                AtomPubRequest::$param_request_type . "=" . AtomPubRequest::$request_type_post . "&" .
+                AtomPubRequest::$param_post_type . "=$post_type&"  .
+                "contentType={$content_type}&".
+                "id=$post_id";
+    }
+
+    function post_iri(PostType $post_type, $post_id) {
+        return "urn:$this->blog_id:post:$post_type:$post_id";
     }
 }
 
