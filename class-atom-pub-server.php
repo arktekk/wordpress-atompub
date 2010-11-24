@@ -112,7 +112,9 @@ class AtomPubServer {
             'post_type' => $post_type->wordpress_id(),
             'posts_per_page' => self::page_size,
             'post_parent' => $parent_id,
-            'offset' => self::page_size * ($current_page - 1));
+            'offset' => self::page_size * ($current_page - 1),
+            'orderby' => 'title',
+            'order' => 'asc');
 
         $query = new WP_Query($args);
 
