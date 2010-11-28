@@ -10,6 +10,7 @@ class AtomPubRequest {
     public static $request_type_list = "list";
     public static $request_type_children = "children";
     public static $request_type_post = "post";
+    public static $request_type_notify_hubs = "notify_hubs";
     public static $query_parameter_keys = array("atompub", "include_content", "pg", "parent", "pt", "id");
 
     private $query_parameters = array();

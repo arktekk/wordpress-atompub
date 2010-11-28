@@ -10,7 +10,17 @@ class AtomPubServer {
         $this->blog_id = get_option('blogname');
     }
 
+    function url_generator() {
+        static $url_generator;
+        if (is_null($url_generator)) {
+            $url_generator = new UrlGenerator($this->app_base, $this->blog_id);
+        }
+        return $url_generator;
+    }
+
     function handle_request($query) {
+        // TODO: check that the requested content type is available
+
         $method = $_SERVER['REQUEST_METHOD'];
 
         $request = new AtomPubRequest($query);
@@ -21,7 +31,7 @@ class AtomPubServer {
                     $this->get_service($request);
                 }
                 else {
-                    $this->not_allowed("GET");
+                    $this->method_not_allowed("GET");
                 }
                 break;
             case AtomPubRequest::$request_type_list:
@@ -29,7 +39,7 @@ class AtomPubServer {
                     $this->get_list($request);
                 }
                 else {
-                    $this->not_allowed("GET");
+                    $this->method_not_allowed("GET");
                 }
                 break;
             case AtomPubRequest::$request_type_children:
@@ -37,7 +47,7 @@ class AtomPubServer {
                     $this->get_children($request);
                 }
                 else {
-                    $this->not_allowed("GET");
+                    $this->method_not_allowed("GET");
                 }
                 break;
             case AtomPubRequest::$request_type_post:
@@ -45,7 +55,26 @@ class AtomPubServer {
                     $this->get_post($request);
                 }
                 else {
-                    $this->not_allowed("GET");
+                    $this->method_not_allowed("GET");
+                }
+                break;
+            case AtomPubRequest::$request_type_notify_hubs:
+                if ($method == "POST") {
+                    if(!is_user_logged_in()) {
+                        // This should ideally call unauthorized(), but as we don't
+                        // have a way to authenticate over HTTP we have to resort to this
+                        // non-RESTful way
+
+                        $this->redirect(wp_login_url($_SERVER["REQUEST_URI"]));
+                    }
+                    if(!$this->current_user_can_notify_hubs()) {
+                        $this->forbidden();
+                    }
+
+                    $this->notify_hubs($request);
+                }
+                else {
+                    $this->method_not_allowed("POST");
                 }
                 break;
             default:
@@ -53,8 +82,12 @@ class AtomPubServer {
         }
     }
 
+    function current_user_can_notify_hubs() {
+        return current_user_can('manage_options');
+    }
+
     function get_service() {
-        $service = new AtomPubService(new UrlGenerator($this->app_base, $this->blog_id));
+        $service = new AtomPubService($this->url_generator());
         $service->to_response(get_bloginfo('name'))->send();
     }
 
@@ -78,15 +111,9 @@ class AtomPubServer {
 
         $num_pages = $query->max_num_pages;
 
-        $feed = AtomPubFeed::createListFeed(new UrlGenerator($this->app_base, $this->blog_id), $post_type, $current_page, $num_pages, self::page_size);
-
-        while ($query->have_posts()) {
-            $post = $query->next_post();
-            $author = get_userdata($post->post_author);
-            $categories = get_the_category($post->ID);
-            $feed->add_post($post, $author, $categories, $request->include_content());
-        }
-        $feed->to_response($query, $categories)->send();
+        $feed = AtomPubFeed::createListFeed($this->url_generator(), $post_type, $current_page, $num_pages, self::page_size);
+        AtomPubServer::query_to_feed($query, $feed, $request->include_content());
+        $feed->to_response()->send();
     }
 
     function get_children(AtomPubRequest $request) {
@@ -117,15 +144,9 @@ class AtomPubServer {
 
         $num_pages = $query->max_num_pages;
 
-        $feed = AtomPubFeed::createChildrenFeed(new UrlGenerator($this->app_base, $this->blog_id), $post_type, $parent_id, $current_page, $num_pages, self::page_size);
-
-        while ($query->have_posts()) {
-            $post = $query->next_post();
-            $author = get_userdata($post->post_author);
-            $categories = get_the_category($post->ID);
-            $feed->add_post($post, $author, $categories, $request->include_content());
-        }
-        $feed->to_response($query, $categories)->send();
+        $feed = AtomPubFeed::createChildrenFeed($this->url_generator(), $post_type, $parent_id, $current_page, $num_pages, self::page_size);
+        AtomPubServer::query_to_feed($query, $feed, $request->include_content());
+        $feed->to_response()->send();
     }
 
     function get_post(AtomPubRequest $request) {
@@ -144,14 +165,32 @@ class AtomPubServer {
             'post_type' => $post_type->wordpress_id());
 
         $query = new WP_Query($args);
-        $feed = AtomPubFeed::createEntryFeed(new UrlGenerator($this->app_base, $this->blog_id), $post_type, $id);
-        if ($query->have_posts()) {
+        $feed = AtomPubFeed::createEntryFeed($this->url_generator(), $post_type, $id);
+        AtomPubServer::query_to_feed($query, $feed, $request->include_content());
+        $feed->to_response()->send();
+    }
+
+    static function query_to_feed(WP_Query $query, AtomPubFeed $feed, $include_content) {
+        if (!$query->have_posts()) {
+            return;
+        }
+
+        while ($query->have_posts()) {
             $post = $query->next_post();
             $author = get_userdata($post->post_author);
             $categories = get_the_category($post->ID);
-            $feed->add_post($post, $author, $categories, $request->include_content());
+            $feed->add_post($post, $author, $categories, $include_content);
         }
-        $feed->to_response($query, $categories)->send();
+    }
+
+    function notify_hubs() {
+        AtomPubCron::notify_hubs();
+    }
+
+    function redirect($url) {
+        status_header('307');
+        header("Location: $url");
+        exit;
     }
 
     function bad_request($reason) {
@@ -161,10 +200,13 @@ class AtomPubServer {
         exit;
     }
 
-    function not_allowed($allow) {
-        //        log_app('Status','405: Not Allowed');
-        header('Allow: ' . join(',', $allow));
-        status_header('405');
+//    function unauthorized() {
+//        status_header('401');
+//        exit;
+//    }
+
+    function forbidden() {
+        status_header('403');
         exit;
     }
 
@@ -172,6 +214,18 @@ class AtomPubServer {
         //        log_app('Status','404: Not Found');
         header('Content-Type: text/plain');
         status_header('404');
+        exit;
+    }
+
+    function method_not_allowed($allow) {
+        //        log_app('Status','405: Not Allowed');
+        if(is_array($allow)) {
+            header('Allow: ' . join(',', $allow));
+        }
+        else {
+            header('Allow: ' . $allow);
+        }
+        status_header('405');
         exit;
     }
 }

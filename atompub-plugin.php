@@ -11,20 +11,22 @@ Author: Event Systems AS
 Version: 1.0
 */
 
+require_once('class-atom-pub-cron.php');
 require_once('class-atom-pub-feed.php');
+require_once('class-atom-pub-options.php');
 require_once('class-atom-pub-request.php');
 require_once('class-atom-pub-response.php');
 require_once('class-atom-pub-server.php');
 require_once('class-atom-pub-service.php');
 require_once('class-url-generator.php');
+require_once('atompub-admin.php');
+require_once('pubsubhubbub.php');
 
 // Hook into wordpress to handle atompub requests
 add_action('parse_request', 'atompub_parse_request');
 add_filter('query_vars', 'atompub_query_vars');
 
-function atompub_parse_request($wp) {
-    // only process requests with "my-plugin=ajax-handler"
-    //    if (array_key_exists('atompub', $wp->query_vars) && $wp->query_vars['atompub'] == 'service') {
+function atompub_parse_request(WP $wp) {
     if (array_key_exists('atompub', $wp->query_vars)) {
         $server = new AtomPubServer();
         $server->handle_request($wp->query_vars);
@@ -59,6 +61,16 @@ function atompub_insert_rewrite_rules($rules) {
 function atompub_insert_query_vars($vars) {
     array_push($vars, 'id');
     return $vars;
+}
+
+register_activation_hook(__FILE__, 'atompub_activate');
+function atompub_activate() {
+    AtomPubCron::activate();
+}
+
+register_deactivation_hook(__FILE__, 'atompub_activate');
+function atompub_deactivate() {
+    AtomPubCron::dectivate();
 }
 
 ?>
