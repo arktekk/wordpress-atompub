@@ -20,8 +20,9 @@ class OpenSearchSearchResults {
 
 class AtomPubLink {
 
-    static function to_xml($href, $rel, $type) {
-        return "<link rel='$rel' type='$type' href='" . esc_url($href) . "'/>";
+    static function to_xml($href, $rel, $type = NULL) {
+        $type = isset($type) ? "type='$type'" : "";
+        return "<link rel='$rel' $type href='" . esc_url($href) . "'/>";
     }
 
     function __construct($href, $rel, $type) {
@@ -97,7 +98,7 @@ EOD;
         $xml .= rest_to_line("    <id>{$guid}</id>");
 
         list($content_type, $content) = self::encode_string($post_title);
-        $xml .= rest_to_line("    <title type='$content_type'>$content</title>");
+        $xml .= rest_to_line("    <title type='$content_type'><![CDATA[$content]]></title>");
 
         $xml .= rest_to_line("    <published>" . atompub_to_date($post_date) . "</published>");
         $xml .= rest_to_line("    <updated>" . atompub_to_date($post_modified) . "</updated>");
@@ -144,10 +145,10 @@ EOD;
             $content = str_replace(']]>', ']]&gt;', $content);
             $content = apply_filters('the_content_feed', $content, "atom");
             list($content_type, $content) = self::encode_string($content);
-            $xml .= rest_to_line("    <content type='$content_type'>$content</content>");
+            $xml .= rest_to_line("    <content type='$content_type'><![CDATA[$content]]></content>");
         }
         else {
-            $xml .= rest_to_line("    <content type='xhtml' src='" . esc_url($this->url_generator->post_url($post->ID, $post_type, $ContentType_HTML)) . "'/>");
+            $xml .= rest_to_line("    <content src='" . esc_url($this->url_generator->post_url($post->ID, $post_type, $ContentType_HTML)) . "'/>");
         }
         $xml .= rest_to_line("  </entry>");
 
@@ -172,6 +173,8 @@ class ListAtomPubFeed extends AtomPubFeed {
 
         parent::__construct($url_generator);
 
+        $options = get_option('atompub_options');
+
         $feed_id = $url_generator->list_iri($post_type);
         $feed_title = "{$post_type}s List";
 
@@ -181,18 +184,19 @@ class ListAtomPubFeed extends AtomPubFeed {
 
         $this->response->add_body(rest_to_line($search_result->to_xml()));
 
-        $last_page = $page_count;
-        $next_page = (($page_index + 1) > $last_page) ? NULL : $page_index + 1;
-        $prev_page = ($page_index - 1) < 1 ? NULL : $page_index - 1;
-
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url(1, $post_type), "first", $ATOM_CONTENT_TYPE)));
-        if (isset($next_page)) {
-            $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($next_page, $post_type), "next", $ATOM_CONTENT_TYPE)));
+        if (($page_index + 1) > $page_count) {
+            $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_index + 1, $post_type), "next", $ATOM_CONTENT_TYPE)));
         }
-        if (isset($prev_page)) {
-            $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($prev_page, $post_type), "prev", $ATOM_CONTENT_TYPE)));
+        if (($page_index - 1) < 1) {
+            $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_index - 1, $post_type), "prev", $ATOM_CONTENT_TYPE)));
         }
-        $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($last_page, $post_type), "last", $ATOM_CONTENT_TYPE)));
+        $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_count, $post_type), "last", $ATOM_CONTENT_TYPE)));
+
+        $hub = $options["hub"];
+        if(isset($hub)) {
+            $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($hub, "hub")));
+        }
     }
 }
 
@@ -211,18 +215,14 @@ class ChildrenAtomPubFeed extends AtomPubFeed {
 
         $this->response->add_body(rest_to_line($search_result->to_xml()));
 
-        $last_page = $page_count;
-        $next_page = (($page_index + 1) > $last_page) ? NULL : $page_index + 1;
-        $prev_page = ($page_index - 1) < 1 ? NULL : $page_index - 1;
-
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, 1, $post_type), "first", $ATOM_CONTENT_TYPE)));
-        if (isset($next_page)) {
-            $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, $next_page, $post_type), "next", $ATOM_CONTENT_TYPE)));
+        if (($page_index + 1) > $page_count) {
+            $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, $page_index + 1, $post_type), "next", $ATOM_CONTENT_TYPE)));
         }
-        if (isset($prev_page)) {
-            $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, $prev_page, $post_type), "prev", $ATOM_CONTENT_TYPE)));
+        if (($page_index - 1) < 1) {
+            $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, $page_index - 1, $post_type), "prev", $ATOM_CONTENT_TYPE)));
         }
-        $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, $last_page, $post_type), "last", $ATOM_CONTENT_TYPE)));
+        $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, $page_count, $post_type), "last", $ATOM_CONTENT_TYPE)));
     }
 }
 
