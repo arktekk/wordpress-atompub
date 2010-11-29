@@ -38,16 +38,16 @@ class AtomPubLink {
 
 abstract class AtomPubFeed {
 
-    static function createChildrenFeed(UrlGenerator $url_generator, PostType $post_type, $post_id, $page_index, $page_count, $page_size) {
-        return new ChildrenAtomPubFeed($url_generator, $post_type, $post_id, $page_index, $page_count, $page_size);
+    static function createChildrenFeed(UrlGenerator $url_generator, PostType $post_type, $post_id, $page_index, $page_count, $page_size, $first_post_modified) {
+        return new ChildrenAtomPubFeed($url_generator, $post_type, $post_id, $page_index, $page_count, $page_size, $first_post_modified);
     }
 
-    static function createListFeed(UrlGenerator $url_generator, PostType $post_type, $page_index, $page_count, $page_size) {
-        return new ListAtomPubFeed($url_generator, $post_type, $page_index, $page_count, $page_size);
+    static function createListFeed(UrlGenerator $url_generator, PostType $post_type, $page_index, $page_count, $page_size, $first_post_modified) {
+        return new ListAtomPubFeed($url_generator, $post_type, $page_index, $page_count, $page_size, $first_post_modified);
     }
 
-    public static function createEntryFeed(UrlGenerator $url_generator, $post_type, $post_id) {
-        return new EntryAtomPubFeed($url_generator, $post_type, $post_id);
+    public static function createEntryFeed(UrlGenerator $url_generator, $post_type, $post_id, $first_post_modified) {
+        return new EntryAtomPubFeed($url_generator, $post_type, $post_id, $first_post_modified);
     }
 
     protected function __construct(UrlGenerator $url_generator) {
@@ -58,7 +58,7 @@ abstract class AtomPubFeed {
         $this->response->set_header("Content-Type: " . $ATOM_CONTENT_TYPE);
     }
 
-    protected function start_feed($feed_id, $feed_title) {
+    protected function start_feed($feed_id, $feed_title, $first_post_modified) {
         global $ATOM_NS, $ATOMPUB_NS, $OPENSEARCH_NS;
 
         $xml = <<<EOD
@@ -71,6 +71,8 @@ abstract class AtomPubFeed {
   <title>{$feed_title}</title>
 
 EOD;
+        $xml .= rest_to_line("  <updated>" . atompub_to_date($first_post_modified) . "</updated>");
+
         $this->response->
                 add_body($xml);
     }
@@ -168,7 +170,7 @@ EOD;
 }
 
 class ListAtomPubFeed extends AtomPubFeed {
-    function __construct(UrlGenerator $url_generator, PostType $post_type, $page_index, $page_count, $page_size) {
+    function __construct(UrlGenerator $url_generator, PostType $post_type, $page_index, $page_count, $page_size, $first_post_modified) {
         global $ATOM_CONTENT_TYPE;
 
         parent::__construct($url_generator);
@@ -178,7 +180,7 @@ class ListAtomPubFeed extends AtomPubFeed {
         $feed_id = $url_generator->list_iri($post_type);
         $feed_title = "{$post_type}s List";
 
-        $this->start_feed($feed_id, $feed_title);
+        $this->start_feed($feed_id, $feed_title, $first_post_modified);
 
         $search_result = OpenSearchSearchResults::fromWordpressResults($page_index, $page_count, $page_size);
 
@@ -202,7 +204,7 @@ class ListAtomPubFeed extends AtomPubFeed {
 }
 
 class ChildrenAtomPubFeed extends AtomPubFeed {
-    function __construct(UrlGenerator $url_generator, PostType $post_type, $post_id, $page_index, $page_count, $page_size) {
+    function __construct(UrlGenerator $url_generator, PostType $post_type, $post_id, $page_index, $page_count, $page_size, $first_post_modified) {
         global $ATOM_CONTENT_TYPE;
 
         parent::__construct($url_generator);
@@ -210,7 +212,7 @@ class ChildrenAtomPubFeed extends AtomPubFeed {
         $feed_id = $url_generator->child_posts_iri($post_type, $post_id);
         $feed_title = "Children of #$post_id";
 
-        $this->start_feed($feed_id, $feed_title);
+        $this->start_feed($feed_id, $feed_title, $first_post_modified);
 
         $search_result = OpenSearchSearchResults::fromWordpressResults($page_index, $page_count, $page_size);
 
@@ -229,7 +231,7 @@ class ChildrenAtomPubFeed extends AtomPubFeed {
 }
 
 class EntryAtomPubFeed extends AtomPubFeed {
-    function __construct(UrlGenerator $url_generator, PostType $post_type, $post_id) {
+    function __construct(UrlGenerator $url_generator, PostType $post_type, $post_id, $first_post_modified) {
         global $ATOM_CONTENT_TYPE;
         global $ContentType_ATOM;
 
@@ -238,7 +240,7 @@ class EntryAtomPubFeed extends AtomPubFeed {
         $feed_id = $url_generator->post_iri($post_type, $post_id);
         $feed_title = "Entry #$post_id";
 
-        $this->start_feed($feed_id, $feed_title);
+        $this->start_feed($feed_id, $feed_title, $first_post_modified);
 
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->post_url($post_id, $post_type, $ContentType_ATOM), "self", $ATOM_CONTENT_TYPE)));
     }

@@ -111,7 +111,7 @@ class AtomPubServer {
 
         $num_pages = $query->max_num_pages;
 
-        $feed = AtomPubFeed::createListFeed($this->url_generator(), $post_type, $current_page, $num_pages, self::page_size);
+        $feed = AtomPubFeed::createListFeed($this->url_generator(), $post_type, $current_page, $num_pages, self::page_size, AtomPubServer::find_first_post_modified($query));
         AtomPubServer::query_to_feed($query, $feed, $request->include_content());
         $feed->to_response()->send();
     }
@@ -144,7 +144,7 @@ class AtomPubServer {
 
         $num_pages = $query->max_num_pages;
 
-        $feed = AtomPubFeed::createChildrenFeed($this->url_generator(), $post_type, $parent_id, $current_page, $num_pages, self::page_size);
+        $feed = AtomPubFeed::createChildrenFeed($this->url_generator(), $post_type, $parent_id, $current_page, $num_pages, self::page_size, AtomPubServer::find_first_post_modified($query));
         AtomPubServer::query_to_feed($query, $feed, $request->include_content());
         $feed->to_response()->send();
     }
@@ -165,9 +165,20 @@ class AtomPubServer {
             'post_type' => $post_type->wordpress_id());
 
         $query = new WP_Query($args);
-        $feed = AtomPubFeed::createEntryFeed($this->url_generator(), $post_type, $id);
+        $feed = AtomPubFeed::createEntryFeed($this->url_generator(), $post_type, $id, AtomPubServer::find_first_post_modified($query));
         AtomPubServer::query_to_feed($query, $feed, $request->include_content());
         $feed->to_response()->send();
+    }
+
+    static function find_first_post_modified(WP_Query $query) {
+        if (!$query->have_posts()) {
+            return time();
+        }
+
+        $post = $query->next_post();
+        $modified = $post->post_modified;
+        $query->rewind_posts();
+        return $modified;
     }
 
     static function query_to_feed(WP_Query $query, AtomPubFeed $feed, $include_content) {
