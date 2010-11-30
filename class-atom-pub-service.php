@@ -15,18 +15,22 @@ class AtomPubService {
         global $SERVICE_CONTENT_TYPE, $ATOM_CONTENT_TYPE;
         global $post_type_post, $post_type_page;
 
-        $posts_url = esc_url($this->url_generator->list_url(1, $post_type_post));
-        $pages_url = esc_url($this->url_generator->list_url(1, $post_type_page));
+        $posts_url = $this->url_generator->list_url(1, $post_type_post);
+        $posts_url_escaped = esc_url($posts_url);
+        $pages_url = $this->url_generator->list_url(1, $post_type_page);
+        $pages_url_escaped = esc_url($pages_url);
         $xml = <<<EOD
 <?xml version="1.0" encoding="utf-8"?>
 <service xmlns="$ATOMPUB_NS" xmlns:atom="$ATOM_NS">
   <workspace>
     <atom:title>$blog_name Workspace</atom:title>
-    <collection href="{$posts_url}">
+    <!-- {$posts_url} -->
+    <collection href="{$posts_url_escaped}">
       <atom:title>$blog_name Posts</atom:title>
       <accept>$ATOM_CONTENT_TYPE;type=entry</accept>
     </collection>
-    <collection href="{$pages_url}">
+    <!-- {$pages_url} -->
+    <collection href="{$pages_url_escaped}">
       <atom:title>$blog_name Pages</atom:title>
       <accept>$ATOM_CONTENT_TYPE;type=entry</accept>
     </collection>

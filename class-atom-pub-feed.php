@@ -119,10 +119,12 @@ EOD;
         $xml .= rest_to_line("    <!-- self=$url -->");
         $xml .= rest_to_line("    " . $link);
 
-        $url = $this->url_generator->post_url($post_parent, $post_type, $ContentType_ATOM);
-        $link = AtomPubLink::to_xml($url, "parent", $ATOM_CONTENT_TYPE);
-        $xml .= rest_to_line("    <!-- parent=$url -->");
-        $xml .= rest_to_line("    " . $link);
+        if($post_parent != 0) {
+            $url = $this->url_generator->post_url($post_parent, $post_type, $ContentType_ATOM);
+            $link = AtomPubLink::to_xml($url, "parent", $ATOM_CONTENT_TYPE);
+            $xml .= rest_to_line("    <!-- parent=$url -->");
+            $xml .= rest_to_line("    " . $link);
+        }
 
 //        $url = $this->url_generator->child_posts_of($post->ID, 1, $post_type);
 //        $link = AtomPubLink::to_xml($url, "urn:wordpress:children", $ATOM_CONTENT_TYPE);
@@ -188,10 +190,10 @@ class ListAtomPubFeed extends AtomPubFeed {
 
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_index, $post_type), "self", $ATOM_CONTENT_TYPE)));
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url(1, $post_type), "first", $ATOM_CONTENT_TYPE)));
-        if (($page_index + 1) > $page_count) {
+        if (($page_index + 1) < $page_count) {
             $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_index + 1, $post_type), "next", $ATOM_CONTENT_TYPE)));
         }
-        if (($page_index - 1) < 1) {
+        if (($page_index - 1) > 1) {
             $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_index - 1, $post_type), "prev", $ATOM_CONTENT_TYPE)));
         }
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_count, $post_type), "last", $ATOM_CONTENT_TYPE)));
@@ -220,10 +222,10 @@ class ChildrenAtomPubFeed extends AtomPubFeed {
 
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_index, $post_type), "self", $ATOM_CONTENT_TYPE)));
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, 1, $post_type), "first", $ATOM_CONTENT_TYPE)));
-        if (($page_index + 1) > $page_count) {
+        if (($page_index + 1) < $page_count) {
             $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, $page_index + 1, $post_type), "next", $ATOM_CONTENT_TYPE)));
         }
-        if (($page_index - 1) < 1) {
+        if (($page_index - 1) > 1) {
             $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, $page_index - 1, $post_type), "prev", $ATOM_CONTENT_TYPE)));
         }
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, $page_count, $post_type), "last", $ATOM_CONTENT_TYPE)));
