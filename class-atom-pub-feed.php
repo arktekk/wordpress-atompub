@@ -92,14 +92,15 @@ EOD;
         $post_type = PostType::from_wordpress($post->post_type);
 
         // Work around http://core.trac.wordpress.org/ticket/15041
-        if (!strpos($guid, "/?p=")) {
+        if (preg_match("/^.*[0-9]+$/", $guid) == 0) {
             $guid .= "?p={$post->ID}";
         }
 
         $xml .= rest_to_line("  <entry>");
         $xml .= rest_to_line("    <id>{$guid}</id>");
 
-        list($content_type, $content) = self::encode_string($post_title);
+        $content = str_replace(']]>', ']]&gt;', $post_title);
+        list($content_type, $content) = self::encode_string($content);
         $xml .= rest_to_line("    <title type='$content_type'><![CDATA[$content]]></title>");
 
         $xml .= rest_to_line("    <published>" . atompub_to_date($post_date) . "</published>");
@@ -148,7 +149,6 @@ EOD;
             $content = apply_filters('the_content', $post_content);
             $content = str_replace(']]>', ']]&gt;', $content);
             $content = apply_filters('the_content_feed', $content, "atom");
-            list($content_type, $content) = self::encode_string($content);
             $xml .= rest_to_line("    <content type='$content_type'><![CDATA[$content]]></content>");
         }
         else {
@@ -190,7 +190,7 @@ class ListAtomPubFeed extends AtomPubFeed {
 
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_index, $post_type), "self", $ATOM_CONTENT_TYPE)));
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url(1, $post_type), "first", $ATOM_CONTENT_TYPE)));
-        if (($page_index + 1) < $page_count) {
+        if (($page_index + 1) <= $page_count) {
             $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_index + 1, $post_type), "next", $ATOM_CONTENT_TYPE)));
         }
         if (($page_index - 1) > 1) {
@@ -222,7 +222,7 @@ class ChildrenAtomPubFeed extends AtomPubFeed {
 
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_index, $post_type), "self", $ATOM_CONTENT_TYPE)));
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, 1, $post_type), "first", $ATOM_CONTENT_TYPE)));
-        if (($page_index + 1) < $page_count) {
+        if (($page_index + 1) <= $page_count) {
             $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->child_posts_of($post_id, $page_index + 1, $post_type), "next", $ATOM_CONTENT_TYPE)));
         }
         if (($page_index - 1) > 1) {
