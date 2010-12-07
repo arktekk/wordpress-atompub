@@ -137,7 +137,8 @@ EOD;
         $xml .= rest_to_line("      <app:accept>$ATOM_CONTENT_TYPE;type=entry</app:accept>");
         $xml .= rest_to_line("    </app:collection>");
 
-        if ($post_status == 'draft') {
+        $xml .= rest_to_line("    <!-- post_status=$post_status -->");
+        if ($post_status == 'publish') {
             $xml .= rest_to_line("    <app:control><app:draft>no</app:draft></app:control>");
         }
         else {
