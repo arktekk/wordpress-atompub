@@ -40,16 +40,10 @@ function plugin_setting_hub_url() {
     $id = AtomPubOptions::get_options()->hubs()->id();
     $hub_urls = AtomPubOptions::get_options()->hubs()->urls();
 
-//    echo "<input id='plugin_hub' name='atompub_options[hub]' size='40' type='text' value='$hub_url'/>";
     echo "<textarea id='plugin_hub' cols='100' rows='10' name='atompub_options[$id]'>";
-//    var_dump($hub_urls);
     foreach($hub_urls as $url) {
         echo $url . "\r\n";
     }
-    /*
-http://localhost:4567
-http://pubsubhubbub.appspot.com
-     */
     echo "</textarea><br/>";
     echo "<i>One URL per line</i>";
 }

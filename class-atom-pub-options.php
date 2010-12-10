@@ -140,10 +140,7 @@ class AtomPubOptionUrlList extends AtomPubOption {
      * @return array
      */
     function validate($new_value) {
-        error_log("AtomPubOptionUrl::validate, new_value=$new_value");
-
         if(strlen($new_value) == 0) {
-            error_log("AtomPubOptionUrl::validate, empty string is ok.");
             return array(true, NULL);
         }
 
