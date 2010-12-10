@@ -5,22 +5,22 @@
  */
 class AtomPubOptions {
     private static $options_key = "atompub_options";
-    private $hub;
+    private $hubs;
 
     private function __construct($options) {
-        $this->hub = new AtomPubOptionUrl("hub", "Hub URL", $options["hub"]);
+        $this->hubs = new AtomPubOptionUrlList("hubs", "Hub URLs", $options["hubs"]);
     }
 
     /**
-     * @return AtomPubOptionUrl
+     * @return AtomPubOptionUrlList
      */
-    function hub() {
-        return $this->hub;
+    function hubs() {
+        return $this->hubs;
     }
 
     function to_options() {
         $options = array();
-        $options[$this->hub->id()] = $this->hub->to_string();
+        $options[$this->hubs->id()] = $this->hubs->to_string();
         return $options;
     }
 
@@ -108,10 +108,32 @@ abstract class AtomPubOption {
     protected abstract function validate($new_value);
 }
 
-class AtomPubOptionUrl extends AtomPubOption {
+class AtomPubOptionUrlList extends AtomPubOption {
 
-    function __construct($id, $title, $value) {
-        parent::__construct($id, $title, $value);
+    function __construct($id, $title, $values) {
+        parent::__construct($id, $title, $values);
+    }
+
+    function urls() {
+        $str = $this->to_string();
+        if(!isset($str) || strlen($str) == 0) {
+            return array();
+        }
+        return AtomPubOptionUrlList::split_string($str);
+    }
+
+    static function split_string($str) {
+        $trimmed_urls = array();
+        $urls = preg_split("/\\n/", $str, null, PREG_SPLIT_NO_EMPTY);
+        foreach($urls as $url) {
+            $url = trim($url);
+
+            if(strlen($url) > 0) {
+                $trimmed_urls[] = $url;
+            }
+        }
+
+        return $trimmed_urls;
     }
 
     /**
@@ -125,11 +147,14 @@ class AtomPubOptionUrl extends AtomPubOption {
             return array(true, NULL);
         }
 
-        $r = filter_var($new_value, FILTER_VALIDATE_URL);
+        foreach(AtomPubOptionUrlList::split_string($new_value) as $url) {
+            $r = filter_var($url, FILTER_VALIDATE_URL);
+            if($r == FALSE) {
+                return array(false, $new_value, "Must be a list of valid URLs");
+            }
+        }
 
-        error_log("AtomPubOptionUrl::validate, valid:" . ($r != FALSE) . ", result=" . print_r($r, true));
-
-        return array($r != FALSE, $new_value, "Must be a valid URL");
+        return array(true, $new_value, "Must be a list of valid URLs");
     }
 }
 ?>

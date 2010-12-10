@@ -37,14 +37,21 @@ function plugin_section_text() {
 }
 
 function plugin_setting_hub_url() {
-    $hub_url = AtomPubOptions::get_options()->hub()->to_string();
+    $id = AtomPubOptions::get_options()->hubs()->id();
+    $hub_urls = AtomPubOptions::get_options()->hubs()->urls();
 
-    echo "<input id='plugin_hub' name='atompub_options[hub]' size='40' type='text' value='$hub_url'/>";
-//    $hub = AtomPubOptions::get_options()->hub();
-//    echo "id={$hub->id()}, ";
-//    echo "title={$hub->title()}, ";
-//    echo "is_set={$hub->is_set()}, ";
-//    echo "to_string={$hub->to_string()}, ";
+//    echo "<input id='plugin_hub' name='atompub_options[hub]' size='40' type='text' value='$hub_url'/>";
+    echo "<textarea id='plugin_hub' cols='100' rows='10' name='atompub_options[$id]'>";
+//    var_dump($hub_urls);
+    foreach($hub_urls as $url) {
+        echo $url . "\r\n";
+    }
+    /*
+http://localhost:4567
+http://pubsubhubbub.appspot.com
+     */
+    echo "</textarea><br/>";
+    echo "<i>One URL per line</i>";
 }
 
 function atompub_options_validate($input) {
@@ -53,7 +60,7 @@ function atompub_options_validate($input) {
 
     error_log("atompub_options_validate, input=" . print_r($input, true));
 
-    try_update($input, 'hub', $options->hub());
+    try_update($input, $options->hubs()->id(), $options->hubs());
 
     $new_options = $options->to_options();
     error_log("new_options=" . print_r($new_options, true));
@@ -62,7 +69,6 @@ function atompub_options_validate($input) {
 
 function try_update($input, $key, AtomPubOption $option) {
     $new_value = $input[$key];
-    error_log("key=$key");
     list($valid, $error) = $option->try_update($new_value);
     if(!$valid) {
         add_settings_error('plugin_hub', 'plugin_hub', $error);

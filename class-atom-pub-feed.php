@@ -178,7 +178,7 @@ class ListAtomPubFeed extends AtomPubFeed {
 
         parent::__construct($url_generator);
 
-        $options = get_option('atompub_options');
+        $options = AtomPubOptions::get_options();
 
         $feed_id = $url_generator->list_iri($post_type);
         $feed_title = "{$post_type}s List";
@@ -199,9 +199,11 @@ class ListAtomPubFeed extends AtomPubFeed {
         }
         $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($this->url_generator->list_url($page_count, $post_type), "last", $ATOM_CONTENT_TYPE)));
 
-        $hub = $options["hub"];
-        if(isset($hub)) {
-            $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($hub, "hub")));
+        $hubs = $options->hubs();
+        if($hubs->is_set()) {
+            foreach($hubs->urls() as $url) {
+                $this->response->add_body(rest_to_line("  " . AtomPubLink::to_xml($url, "hub")));
+            }
         }
     }
 }
