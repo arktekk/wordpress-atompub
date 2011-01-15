@@ -5,7 +5,7 @@
  */
 /*
 Plugin Name: AtomPub Server
-XXX Plugin URI: http://wordpress.org/extend/plugins/hello-dolly/
+Plugin URI: <not set>
 Description: AtomPub Server
 Author: Event Systems AS
 Version: 1.0
@@ -71,6 +71,18 @@ function atompub_activate() {
 register_deactivation_hook(__FILE__, 'atompub_activate');
 function atompub_deactivate() {
     AtomPubCron::dectivate();
+}
+
+// Hook into the publishing functions
+add_action('deleted_post', 'update_hubs');
+add_action('private_to_publish', 'update_hubs');
+add_action('publish_post', 'update_hubs');
+add_action('publish_page', 'update_hubs');
+//add_action('publish_phone', 'update_hubs');
+//add_action('save_post', 'update_hubs');
+function update_hubs($post_id) {
+    error_log("Post updated: $post_id, notifying hubs.");
+    Pubsubhubbub::notify_hubs();
 }
 
 ?>

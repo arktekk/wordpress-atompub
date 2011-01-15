@@ -17,26 +17,7 @@ class AtomPubCron {
     }
 
     static function hourly() {
-        AtomPubCron::notify_hubs();
-    }
-
-    static function notify_hubs() {
-        global $post_type_post, $post_type_page;
-
-        $hubs = AtomPubOptions::get_options()->hubs();
-        if(!$hubs->is_set()) {
-            return;
-        }
-
-        $atom_pub_server = new AtomPubServer();
-        $url_generator = $atom_pub_server->url_generator();
-
-        foreach($hubs->urls() as $url) {
-            $pubsubhubbub = new Pubsubhubbub($url);
-
-            $pubsubhubbub->notify_hub_of_feed($url_generator->list_url(1, $post_type_post));
-            $pubsubhubbub->notify_hub_of_feed($url_generator->list_url(1, $post_type_page));
-        }
+        Pubsubhubbub::notify_hubs();
     }
 }
 ?>
