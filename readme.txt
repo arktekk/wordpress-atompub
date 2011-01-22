@@ -6,7 +6,7 @@ Tested up to: 3.0
 Stable tag: 1.0
 
 == Description ==
-This plugin allows you to access the Wordpress content over [AtomPub](http://tools.ietf.org/html/rfc5023) in a fairly generic way. It strives to be as standards compliant as possible. It can also act as a [Pubsubhubbub](http://code.google.com/p/pubsubhubbub/) publisher.
+This plugin allows you to access the Wordpress content over [AtomPub](http://tools.ietf.org/html/rfc5023) in a fairly generic way. It strives to be as standards compliant as possible. It can also act as a [Pubsubhubbub](http://code.google.com/p/pubsubhubbub/) publisher. While this plugin supports AtomPub it does currently not support publishing entries over AtomPub yet.
 
 You can use it to turn your Wordpress installation into a CMS and use it as a backend for other applications that can handle AtomPub/Atom.
 
