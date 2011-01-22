@@ -8,7 +8,7 @@ Plugin Name: AtomPub Server
 Plugin URI: https://github.com/arktekk/wordpress-atompub/wiki
 Description: AtomPub Server
 Author: Event Systems AS
-Version: 1.0-dev
+Version: 1.0
 */
 
 require_once('class-atom-pub-cron.php');
