@@ -1,6 +1,6 @@
 <?php
 /**
- * @package REST_Server
+ * @package Atompub
  * @version 1.0
  */
 /*
