@@ -5,10 +5,10 @@
  */
 /*
 Plugin Name: AtomPub Server
-Plugin URI: <not set>
+Plugin URI: https://github.com/arktekk/wordpress-atompub/wiki
 Description: AtomPub Server
 Author: Event Systems AS
-Version: 1.0
+Version: @VERSION@
 */
 
 require_once('class-atom-pub-cron.php');
