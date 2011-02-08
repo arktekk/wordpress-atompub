@@ -176,7 +176,7 @@ class AtomPubServer {
         }
 
         $post = $query->next_post();
-        $modified = $post->post_modified;
+        $modified = $post->post_modified_gmt;
         $query->rewind_posts();
         return $modified;
     }
